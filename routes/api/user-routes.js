@@ -27,14 +27,14 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
     //findOne(); method = `SELECT * FROM users WHERE id = 1`;
     User.findOne({
-        attributes: { exclude: ['password']},
+        attributes: { exclude: ['password'] },
         where: {
             id: req.params.id
         }
     })
     .then(dbUserData => {
         if (!dbUserData){
-            res.status(404).json ({ message: 'No user found with this id'});
+            res.status(404).json({ message: 'No user found with this id'});
             return;
         }
         res.json(dbUserData);
@@ -67,6 +67,31 @@ router.post('/', (req, res) => {
     });
 });
 
+router.post('/login', (req, res) => {
+    // expects { email: 'sam@sam.com', password: 'password1234'}
+    User.findOne({
+        where: {
+            email: req.body.email
+        }
+    }).then(dbUserData => {
+        if (!dbUserData){
+            res.status(400).json({ message: 'No user with this email address'});
+            return;
+        }
+        //add comment syntax in front of this in the .then()
+        //res.json({ user: dbUserData});
+        // verify user
+
+        const validPassword = dbUserData.checkPassword(req.body.password);
+            if(!validPassword){
+                res.status(400).json({ message: 'Incorrect password!'});
+                return;
+            }
+
+            res.json({ user: dbUserData, message: 'You are now logged in!'});
+    });
+});
+
 //PUT/api/users/1
 router.put('/:id', (req, res) => {
 //Update exsisting data
@@ -81,6 +106,7 @@ router.put('/:id', (req, res) => {
     //                  SET username = 'sam', email = 'sam@sam.com', password = 'password1234'
     //                  WHERE id = 1;
     User.update(req.body, {
+        individualHooks: true,
         where: {
             id: req.params.id
         }
